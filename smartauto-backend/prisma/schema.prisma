@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  MANAGER
+  MECHANIC
+  DRIVER
+}
+
+enum OrderStatus {
+  NEW
+  ACCEPTED
+  IN_REPAIR
+  WAITING_FOR_PARTS
+  REPAIRED
+  DELIVERING
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash") 
+  fullName     String   @map("full_name")
+  role         UserRole
+  isAvailable  Boolean  @default(true) @map("is_available")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  cars         Car[]
+
+  customerOrders  Order[] @relation("CustomerOrders")
+  managerOrders  Order[] @relation("ManagerOrders")
+  mechanicOrders  Order[] @relation("MechanicOrders")
+  driverOrders  Order[] @relation("DriverOrders")
+
+  @@map("users")
+}
+
+model Car {
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  licensePlate String @unique @map("license_plate")
+  brand        String
+  model        String
+  
+  ownerId      String @db.Uuid @map("owner_id")
+  owner        User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  orders       Order[]
+
+  @@map("cars")
+}
+
+model Order {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status      OrderStatus @default(NEW)
+  description String?
+  location    String?     
+  
+  estimatedPrice Decimal? @db.Decimal(7, 2) @map("estimated_price")
+
+  customerId  String @db.Uuid @map("customer_id")
+  customer    User   @relation("CustomerOrders", fields: [customerId], references: [id])
+  
+  carId       String @db.Uuid @map("car_id")
+  car         Car    @relation(fields: [carId], references: [id])
+
+  managerId   String? @db.Uuid @map("manager_id")
+  manager     User?   @relation("ManagerOrders", fields: [managerId], references: [id])
+  
+  mechanicId  String? @db.Uuid @map("mechanic_id")
+  mechanic    User?   @relation("MechanicOrders", fields: [mechanicId], references: [id])
+  
+  driverId    String? @db.Uuid @map("driver_id")
+  driver      User?   @relation("DriverOrders", fields: [driverId], references: [id])
+
+  parts       OrderPart[]
+  protocol    Protocol?
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("orders")
+}
+
+model Part {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  stockQuantity Int         @default(0) @map("stock_quantity")
+  price         Decimal     @db.Decimal(7, 2)
+  
+  orderParts    OrderPart[]
+
+  @@map("parts")
+}
+
+model OrderPart {
+  orderId   String  @db.Uuid @map("order_id")
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  partId    String  @db.Uuid @map("part_id")
+  part      Part    @relation(fields: [partId], references: [id])
+  
+  quantity  Int     @default(1)
+  unitPrice Decimal @db.Decimal(7, 2) @map("unit_price")
+
+  @@id([orderId, partId])
+  @@map("order_parts")
+}
+
+model Protocol {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId       String   @unique @db.Uuid @map("order_id")
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  signatureData String?  @map("signature_data")
+  signedAt      DateTime @default(now()) @map("signed_at") @db.Timestamptz
+
+  @@map("protocols")
+}
