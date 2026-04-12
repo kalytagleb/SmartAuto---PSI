@@ -18,6 +18,22 @@ export class OrdersController {
         return this.ordersService.assignStaff(id, data);
     }
 
+    @Patch(':id/add-part')
+    addPart(
+        @Param('id') id: string,
+        @Body() data: {partId: string, quantity: number}
+    ) {
+        return this.ordersService.addPartToOrder(id, data.partId, data.quantity);
+    }
+
+    @Patch(':id/complete')
+    complete(
+        @Param('id') id: string,
+        @Body() data: {signatureData: string}
+    ) {
+        return this.ordersService.completeOrder(id, data.signatureData);
+    }
+
     @Get()
     findAll() {
         return this.ordersService.findAll();

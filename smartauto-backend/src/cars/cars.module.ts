@@ -4,7 +4,7 @@ import { CarsController } from './cars.controller';
 import { PrismaService } from 'src/prisma.service';
 
 @Module({
-  providers: [CarsService, PrismaService],
+  providers: [CarsService],
   controllers: [CarsController]
 })
 export class CarsModule {}

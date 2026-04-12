@@ -56,12 +56,87 @@ export class OrdersService {
         });
     }
 
+    // UC04: Add part to order and update warehouse
+    async addPartToOrder(orderId: string, partId: string, quantity: number) {
+        const part = await this.prisma.part.findUnique({where: {id: partId}});
+
+        if (!part || part.stockQuantity < quantity) {
+            // UC05: We don't have part on warehouse
+            await this.prisma.order.update({
+                where: {id: orderId},
+                data: {status: OrderStatus.WAITING_FOR_PARTS}
+            });
+            throw new Error('There are no parts on warehouse! Order status changed.');
+        }
+
+        // I use here transaction, because transaction guarantee that all three actions execute successfully, or db return to initial state.
+        return this.prisma.$transaction(async (tx) => {
+            // Remove part from warehouse
+            await tx.part.update({
+                where: {id: partId},
+                data: {stockQuantity: {decrement: quantity}}
+            });
+
+            // Add part to order (into intermediary table)
+            const orderPart = await tx.orderPart.create({
+                data: {
+                    orderId: orderId,
+                    partId: partId,
+                    quantity: quantity,
+                    unitPrice: part.price
+                }
+            });
+
+            await tx.order.update({
+                where: {id: orderId},
+                data: {status: OrderStatus.IN_REPAIR}
+            });
+
+            return orderPart;
+        });
+    }
+
+    // UC06: Finishing order and creating protocol
+    async completeOrder(orderId: string, signature: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const protocol = await tx.protocol.create({
+                data: {
+                    orderId: orderId,
+                    signatureData: signature,
+                }
+            });
+
+            const order = await tx.order.update({
+                where: {id: orderId},
+                data: {status: OrderStatus.COMPLETED},
+                include: {protocol: true}
+            });
+
+            return order;
+        });
+    }
+
+    // UC04: Finishing of repair
+    async finishRepair(orderId: string) {
+        return this.prisma.order.update({
+            where: {id: orderId},
+            data: {
+                status: OrderStatus.REPAIRED
+            }
+        });
+    }
+
     async findAll() {
         return this.prisma.order.findMany({
             include: {
                 customer: true,
                 car: true,
                 mechanic: true,
+                parts: {
+                    include: {
+                        part: true
+                    }
+                }
             },
             orderBy: {createdAt: 'desc'}
         });

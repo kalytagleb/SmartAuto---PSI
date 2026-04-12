@@ -22,6 +22,15 @@ export class UsersService {
         });
     }
 
+    async findAvailable(role: UserRole) {
+        return this.prisma.user.findMany({
+            where: {
+                role: role,
+                isAvailable: true
+            }
+        });
+    }
+
     async findAll() {
         return this.prisma.user.findMany();
     }
