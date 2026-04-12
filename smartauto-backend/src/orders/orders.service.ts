@@ -38,6 +38,24 @@ export class OrdersService {
         });
     }
 
+    // UC02: AssignStaff
+    async assignStaff(orderId: string, data: {managerId?: string, mechanicId?: string, driverId?: string}) {
+        return this.prisma.order.update({
+            where: {id: orderId},
+            data: {
+                managerId: data.managerId,
+                mechanicId: data.mechanicId,
+                driverId: data.driverId,
+                status: OrderStatus.ACCEPTED,
+            },
+            include: {
+                mechanic: true,
+                manager: true,
+                car: true
+            }
+        });
+    }
+
     async findAll() {
         return this.prisma.order.findMany({
             include: {
