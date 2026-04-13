@@ -11,7 +11,7 @@ export class OrdersService {
     }
 
     // UC01: Create Order
-    async createOrder(data: {customerId: string, carId: string, description: string, location: string}) {
+    async createOrder(data: {customerId: string, carId: string, description: string, location: string, plannedStart?: string, plannedEnd?: string}) {
         const car = await this.prisma.car.findUnique({where: {id: data.carId}});
         const spzRegex = /^[A-Z]{2}-?\d{3}[A-Z]{2}$/;
 
@@ -30,6 +30,8 @@ export class OrdersService {
                 location: data.location,
                 estimatedPrice: calculatedPrice,
                 status: OrderStatus.NEW,
+                plannedStart: data.plannedStart ? new Date(data.plannedStart) : null,
+                plannedEnd: data.plannedEnd ? new Date(data.plannedEnd) : null,
             },
             include: {
                 customer: true,
@@ -39,21 +41,28 @@ export class OrdersService {
     }
 
     // UC02: AssignStaff
-    async assignStaff(orderId: string, data: {managerId?: string, mechanicId?: string, driverId?: string}) {
-        return this.prisma.order.update({
+    async assignStaff(orderId: string, data: {managerId?: string, mechanicId?: string, driverId?: string, isTowing?: boolean}) {
+        const updateOrder = await this.prisma.order.update({
             where: {id: orderId},
             data: {
-                managerId: data.managerId,
-                mechanicId: data.mechanicId,
-                driverId: data.driverId,
+                ...data,
                 status: OrderStatus.ACCEPTED,
             },
             include: {
                 mechanic: true,
-                manager: true,
-                car: true
+                driver: true,
             }
         });
+
+        if (updateOrder.mechanic) {
+            console.log(`Notification to Mechanic ${updateOrder.mechanic.fullName}: You should do order #${orderId}`);
+        }
+
+        if (updateOrder.driver) {
+            console.log(`Notification to Mechanic ${updateOrder.driver.fullName}: ${data.isTowing ? 'There is need evacuation!' : 'Usual delivery'} for order #${orderId}`);
+        }
+
+        return updateOrder;
     }
 
     // UC04: Add part to order and update warehouse

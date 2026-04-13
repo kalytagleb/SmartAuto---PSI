@@ -22,13 +22,59 @@ export class UsersService {
         });
     }
 
-    async findAvailable(role: UserRole) {
-        return this.prisma.user.findMany({
-            where: {
-                role: role,
-                isAvailable: true
-            }
-        });
+    async findAvailable(role: UserRole, start?: string, end?: string) {
+        const where: any = {
+            role: role,
+            isAvailable: true,
+        };
+
+        if (start && end) {
+            const slotStart = new Date(start);
+            const slotEnd = new Date(end);
+
+            where.NOT = {
+                OR: [
+                    {
+                        mechanicOrders: {
+                            some: {
+                                AND: [
+                                    {
+                                        plannedStart: {
+                                            lt: slotEnd
+                                        }
+                                    },
+                                    {
+                                        plannedEnd: {
+                                            gt: slotStart
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        driverOrders: {
+                            some: {
+                                AND: [
+                                    {
+                                        plannedStart: {
+                                            lt: slotEnd
+                                        }
+                                    },
+                                    {
+                                        plannedEnd: {
+                                            gt: slotStart
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            };
+        }
+
+        return this.prisma.user.findMany({where});
     }
 
     async findAll() {

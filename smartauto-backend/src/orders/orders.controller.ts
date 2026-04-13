@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { OrdersService } from './orders.service';
+import { time } from 'console';
 
 @Controller('orders')
 export class OrdersController {
@@ -32,6 +33,11 @@ export class OrdersController {
         @Body() data: {signatureData: string}
     ) {
         return this.ordersService.completeOrder(id, data.signatureData);
+    }
+
+    @Patch(':id/finish-repair')
+    finish(@Param('id') id: string) {
+        return this.ordersService.finishRepair(id);
     }
 
     @Get()

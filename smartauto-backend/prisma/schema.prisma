@@ -71,7 +71,10 @@ model Order {
   location    String?     
   
   estimatedPrice Decimal? @db.Decimal(7, 2) @map("estimated_price")
-  isTowing    Boolean     @default(false)
+  isTowing    Boolean     @default(false) @map("is_towing")
+
+  plannedStart DateTime?  @map("planned_start")  @db.Timestamptz
+  plannedEnd   DateTime?  @map("planned_end")    @db.Timestamptz
 
   customerId  String @db.Uuid @map("customer_id")
   customer    User   @relation("CustomerOrders", fields: [customerId], references: [id])
