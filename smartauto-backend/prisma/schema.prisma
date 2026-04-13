@@ -39,6 +39,7 @@ model User {
   role         UserRole
   isAvailable  Boolean  @default(true) @map("is_available")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  refreshTokenHash String  @map("refresh_token_hash")
 
   cars         Car[]
 

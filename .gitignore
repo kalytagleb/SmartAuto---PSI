@@ -13,5 +13,6 @@ Thumbs.db
 
 /smartauto-backend/prisma/migrations/shadow-db*
 /smartauto-backend/generated/
+/smartauto-backend/cookies*
 
 /smartauto-ui/.eslintcache

@@ -3,6 +3,8 @@ import { UserRole } from 'generated/prisma/enums';
 import { PrismaClient } from 'generated/prisma/internal/class';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcrypt'
+import { time } from 'console';
+import { User } from 'generated/prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -75,6 +77,22 @@ export class UsersService {
         }
 
         return this.prisma.user.findMany({where});
+    }
+
+    async findOneByEmail(email: string) {
+        return this.prisma.user.findUnique({
+            where: {
+                email
+            }
+        });
+    }
+
+    async findOneById(id: string): Promise<User | null> {
+        return this.prisma.user.findUnique({
+            where: {
+                id
+            },
+        });
     }
 
     async findAll() {
