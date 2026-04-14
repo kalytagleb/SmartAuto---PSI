@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UserRole } from 'generated/prisma/enums';
-import { User } from 'generated/prisma/browser';
-import { start } from 'repl';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
+@Roles(UserRole.MANAGER)
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}

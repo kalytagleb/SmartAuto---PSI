@@ -1,10 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { UserRole } from 'generated/prisma/enums';
-import { PrismaClient } from 'generated/prisma/internal/class';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcrypt'
-import { time } from 'console';
 import { User } from 'generated/prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class UsersService {
@@ -14,14 +13,21 @@ export class UsersService {
         const salt = await bcrypt.genSalt();
         const hashedPath = await bcrypt.hash(data.passwordRaw, salt);
         
-        return this.prisma.user.create({
-            data: {
-                email: data.email,
-                fullName: data.fullName,
-                role: data.role,
-                passwordHash: hashedPath,
-            },
-        });
+        try {
+            return await this.prisma.user.create({
+                data: {
+                    email: data.email,
+                    fullName: data.fullName,
+                    role: data.role,
+                    passwordHash: hashedPath,
+                },
+            });
+        } catch (e) {
+            if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+                throw new ConflictException('User with this email already exists');
+            }
+            throw e;
+        }
     }
 
     async findAvailable(role: UserRole, start?: string, end?: string) {

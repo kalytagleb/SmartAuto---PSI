@@ -140,7 +140,9 @@ export class OrdersService {
             include: {
                 customer: true,
                 car: true,
+                manager: true,
                 mechanic: true,
+                driver: true,
                 parts: {
                     include: {
                         part: true

@@ -100,4 +100,24 @@ export class AuthService {
             message: 'Tokens refreshed'
         };
     }
+
+    async validateUserByToken(token: string) {
+        try {
+            const payload = await this.jwtService.verifyAsync(token, {
+                secret: this.config.get('JWT_ACCESS_SECRET'),
+            });
+
+            const user = await this.usersService.findOneById(payload.sub);
+            if (!user) return null;
+
+            return {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role
+            };
+        } catch (e) {
+            return null;
+        }
+    }
 }
