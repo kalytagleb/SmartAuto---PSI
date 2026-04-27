@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'generated/prisma/enums';
+import { Request } from 'express';
 
 @Controller('orders')
 export class OrdersController {
@@ -9,8 +10,8 @@ export class OrdersController {
 
     @Roles(UserRole.CUSTOMER, UserRole.MANAGER)
     @Post()
-    create(@Body() data: {customerId: string, carId: string, description: string, location: string}) {
-        return this.ordersService.createOrder(data);
+    create(@Body() data: {carId: string, description: string, location: string}, @Req() req: Request) {
+        return this.ordersService.createOrder({...data, customerId: req['user'].sub});
     }
 
     @Roles(UserRole.MANAGER)
