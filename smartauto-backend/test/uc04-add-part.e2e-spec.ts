@@ -137,7 +137,7 @@ describe('UC04 — Add Part to Order', () => {
             .set('Cookie', mechanicCookies)
             .send({ partId, quantity: initialStock + 99 });
 
-        expect(res.status).toBe(500);
+        expect(res.status).toBe(400);
 
         const order = await prisma.order.findUnique({ where: { id: orderId } });
         expect(order!.status).toBe('WAITING_FOR_PARTS');
