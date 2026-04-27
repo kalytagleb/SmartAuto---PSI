@@ -59,7 +59,7 @@ export class OrdersService {
         }
 
         if (updateOrder.driver) {
-            console.log(`Notification to Mechanic ${updateOrder.driver.fullName}: ${data.isTowing ? 'There is need evacuation!' : 'Usual delivery'} for order #${orderId}`);
+            console.log(`Notification to Driver ${updateOrder.driver.fullName}: ${data.isTowing ? 'There is need evacuation!' : 'Usual delivery'} for order #${orderId}`);
         }
 
         return updateOrder;
@@ -67,26 +67,23 @@ export class OrdersService {
 
     // UC04: Add part to order and update warehouse
     async addPartToOrder(orderId: string, partId: string, quantity: number) {
-        const part = await this.prisma.part.findUnique({where: {id: partId}});
-
-        if (!part || part.stockQuantity < quantity) {
-            // UC05: We don't have part on warehouse
-            await this.prisma.order.update({
-                where: {id: orderId},
-                data: {status: OrderStatus.WAITING_FOR_PARTS}
-            });
-            throw new Error('There are no parts on warehouse! Order status changed.');
-        }
-
-        // I use here transaction, because transaction guarantee that all three actions execute successfully, or db return to initial state.
         return this.prisma.$transaction(async (tx) => {
-            // Remove part from warehouse
+            const part = await tx.part.findUnique({where: {id: partId}});
+
+            if (!part || part.stockQuantity < quantity) {
+                // UC05: We don't have part on warehouse
+                await tx.order.update({
+                    where: {id: orderId},
+                    data: {status: OrderStatus.WAITING_FOR_PARTS}
+                });
+                throw new BadRequestException('There are no parts on warehouse! Order status changed.');
+            }
+
             await tx.part.update({
                 where: {id: partId},
                 data: {stockQuantity: {decrement: quantity}}
             });
 
-            // Add part to order (into intermediary table)
             const orderPart = await tx.orderPart.create({
                 data: {
                     orderId: orderId,
